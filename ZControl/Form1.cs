@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
@@ -117,6 +118,11 @@ namespace ZControl
             timer.Tick += Timer_Tick;
             timer.Enabled = true;
 
+            System.Windows.Forms.Timer Refresh_timer = new System.Windows.Forms.Timer();
+            Refresh_timer.Interval = 30000;
+            Refresh_timer.Tick += Refresh_Timer_Tick;
+            Refresh_timer.Enabled = true;
+
             checkUpdate();
         }
 
@@ -128,6 +134,17 @@ namespace ZControl
                 mqttConnect(txtMQTTServer.Text, (int)numMQTTPort.Value, txtMQTTUser.Text, txtMQTTPassword.Text);
             }
             udpConnect();
+
+        }
+        private void Refresh_Timer_Tick(object sender, EventArgs e)
+        {
+            Task.Run(() => {
+
+                foreach (FormItem d in listBox1.Items)
+                {
+                    d.RefreshStatus();
+                }
+            });
         }
 
         private void send(string topic, string message)
@@ -394,6 +411,7 @@ namespace ZControl
                     if (ip.Equals("255.255.255.255")) ip = "0.0.0.0";
                     IPEndPoint local = new IPEndPoint(IPAddress.Parse(ip), 10181);
                     udpClient = new UdpClient(local);
+                    Refresh_Timer_Tick(null, null);
                     //udpClient = new UdpClient(10181);
                 }
 
@@ -824,10 +842,10 @@ namespace ZControl
 
         private void LabVersion_Click(object sender, EventArgs e)
         {
-            if (versionInfo == null) 
+            if (versionInfo == null)
             {
                 System.Diagnostics.Process.Start("https://github.com/a2633063/SmartControl_PC/releases/latest");
-                return; 
+                return;
             }
             DialogResult res = MessageBox.Show("更新内容:\r\n" + versionInfo.message + "\r\n\r\n更新时间:" + versionInfo.created_at + "\r\n\r\n点击确认打开浏览器开始下载文件", "有新版本:" + versionInfo.tag_name, MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
             if (res == DialogResult.OK)
